@@ -1,0 +1,62 @@
+# Compile Dose sur un Mac de GitHub et publie Dose.ipa (non signé) dans la release « latest ».
+# SideStore signe ensuite l'app avec ton identifiant Apple au moment de l'installer.
+name: Build Dose
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Outils (XcodeGen + ldid)
+        run: brew install xcodegen ldid
+
+      - name: Générer le projet Xcode
+        run: xcodegen generate
+
+      - name: Compiler (sans signature)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Dose.xcodeproj \
+            -scheme Dose \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tee build.log | grep -E "error:|warning: .*Dose|BUILD" || true
+          test -d build/Build/Products/Release-iphoneos/Dose.app
+
+      - name: Ajouter les droits (App Group) et créer l'.ipa
+        run: |
+          APP=build/Build/Products/Release-iphoneos/Dose.app
+          ldid -SWidgets/DoseWidgets.entitlements "$APP/PlugIns/DoseWidgets.appex/DoseWidgets"
+          ldid -SApp/Dose.entitlements "$APP/Dose"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -qry Dose.ipa Payload
+
+      - name: Garder le journal en cas d'erreur
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+
+      - name: Publier dans la release « latest »
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+          gh release create latest Dose.ipa \
+            --title "Dose — dernière version" \
+            --notes "Build du $(date -u '+%d/%m/%Y %H:%M') UTC · commit ${GITHUB_SHA::7}"
