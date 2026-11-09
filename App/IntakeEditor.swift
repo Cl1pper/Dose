@@ -5,10 +5,22 @@ struct AmountField: View {
     @Binding var amount: Double?
     var placeholder = "Quantité"
     @State private var text = ""
+    @FocusState private var focused: Bool
 
     var body: some View {
         TextField(placeholder, text: $text)
             .keyboardType(.decimalPad)
+            .focused($focused)
+            .toolbar {
+                // Le clavier numérique n'a pas de touche « OK » : on en ajoute une.
+                if focused {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("OK") { focused = false }
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
             .onAppear { text = amount.map(DoseFormat.number) ?? "" }
             .onChange(of: text) { _, newValue in
                 let parsed = Self.parse(newValue)
