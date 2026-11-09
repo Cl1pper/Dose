@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -71,16 +72,17 @@ enum DoseEffect: Equatable {
 }
 
 /// Un rond par complément : contour quand c'est à prendre, rempli et animé quand c'est pris.
-struct DoseBubble: View {
+struct DoseBubble<Action: AppIntent>: View {
     let item: DoseItem
     var size: CGFloat
     var showName = false
+    let action: Action
 
     private var effect: DoseEffect { .of(item.supplement) }
     private var color: Color { Color(hex: item.supplement.colorHex) }
 
     var body: some View {
-        Button(intent: ToggleSupplementIntent(supplementID: item.id)) {
+        Button(intent: action) {
             VStack(spacing: 4) {
                 ZStack {
                     halo
@@ -201,5 +203,21 @@ struct DoseBubble: View {
                 EmptyView()
             }
         }
+    }
+}
+
+extension DoseBubble where Action == ToggleSupplementIntent {
+    /// Rond de widget : coche / décoche le complément.
+    init(item: DoseItem, size: CGFloat, showName: Bool = false) {
+        self.init(item: item, size: size, showName: showName, action: ToggleSupplementIntent(supplementID: item.id))
+    }
+}
+
+extension DoseChip {
+    /// Convertit une puce de Live Activity en élément affichable par DoseBubble.
+    var asItem: DoseItem {
+        let s = Supplement(id: id, name: name, moment: .matin, colorHex: colorHex, symbol: symbol)
+        let record = taken ? Intake(supplementID: id, name: name, time: .now, amount: nil, unit: nil) : nil
+        return DoseItem(supplement: s, record: record)
     }
 }

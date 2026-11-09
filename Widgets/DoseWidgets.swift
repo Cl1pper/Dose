@@ -208,29 +208,36 @@ struct LockView: View {
             .buttonStyle(.plain)
 
         case .accessoryRectangular:
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    Image(systemName: "pills.fill")
                     Text("Dose").font(.headline)
                     Spacer()
-                    Text("\(s.done)/\(s.total)")
+                    Text(s.isComplete ? "tout pris" : "\(s.done)/\(s.total)")
                         .font(.headline)
                         .contentTransition(.numericText(value: Double(s.done)))
                 }
-                if let next = s.next {
-                    Button(intent: ToggleSupplementIntent(supplementID: next.id)) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "circle")
-                            Text(next.supplement.name).lineLimit(1)
-                        }
+                if s.isComplete {
+                    Label("Série \(s.streak) j", systemImage: "checkmark.circle.fill")
                         .font(.body.weight(.semibold))
-                    }
-                    .buttonStyle(.plain)
                 } else {
-                    Label("Tout pris · \(s.streak) j", systemImage: "checkmark.circle.fill")
-                        .font(.body.weight(.semibold))
+                    // Les 3 prochains à prendre, en gros ronds faciles à toucher.
+                    HStack(spacing: 8) {
+                        ForEach(Array(s.items.filter { !$0.taken }.prefix(3))) { item in
+                            Button(intent: ToggleSupplementIntent(supplementID: item.id)) {
+                                ZStack {
+                                    Circle().strokeBorder(lineWidth: 2)
+                                    Image(systemName: DoseEffect.of(item.supplement).pendingSymbol(item.supplement))
+                                        .font(.system(size: 15, weight: .bold))
+                                }
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Prendre \(item.supplement.name)")
+                        }
+                        Spacer(minLength: 0)
+                    }
                 }
-                ProgressView(value: s.fraction)
             }
             .widgetAccentable()
 
@@ -255,28 +262,14 @@ struct DoseLockWidget: Widget {
 
 struct ChipsRow: View {
     let state: DoseActivityAttributes.ContentState
+    var size: CGFloat = 50
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 0) {
             ForEach(state.items) { chip in
-                let c = Color(hex: chip.colorHex)
-                Button(intent: ActivityToggleIntent(supplementID: chip.id)) {
-                    VStack(spacing: 3) {
-                        Image(systemName: chip.taken ? "checkmark" : chip.symbol)
-                            .font(.system(size: 15, weight: .bold))
-                            .contentTransition(.symbolEffect(.replace))
-                        Text(chip.name)
-                            .font(.system(size: 9, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                    }
+                DoseBubble(item: chip.asItem, size: size, showName: true,
+                           action: ActivityToggleIntent(supplementID: chip.id))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .foregroundStyle(chip.taken ? Theme.bg : c)
-                    .background(chip.taken ? c : c.opacity(0.16),
-                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -302,11 +295,11 @@ struct LockActivityView: View {
                     .monospacedDigit()
                     .contentTransition(.numericText(value: Double(state.done)))
             }
-            ProgressView(value: state.fraction)
-                .tint(Theme.mint)
-            ChipsRow(state: state)
+            ChipsRow(state: state, size: 50)
+                .padding(.top, 4)
         }
-        .padding(14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 14)
         .environment(\.colorScheme, .dark)
     }
 }
@@ -330,7 +323,7 @@ struct DoseLiveActivity: Widget {
                         .contentTransition(.numericText(value: Double(context.state.done)))
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    ChipsRow(state: context.state)
+                    ChipsRow(state: context.state, size: 40)
                 }
             } compactLeading: {
                 Image(systemName: "pills.fill")
