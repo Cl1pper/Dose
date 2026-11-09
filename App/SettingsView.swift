@@ -172,6 +172,7 @@ struct SettingsView: View {
 
 struct SupplementEditor: View {
     @Binding var supplement: Supplement
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Form {
@@ -226,5 +227,12 @@ struct SupplementEditor: View {
             }
         }
         .navigationTitle(supplement.name.isEmpty ? "Complément" : supplement.name)
+        .toolbar {
+            // Bouton OK en haut : ferme la fiche (tout est déjà enregistré).
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("OK") { dismiss() }
+                    .fontWeight(.semibold)
+            }
+        }
     }
 }
