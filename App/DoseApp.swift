@@ -22,9 +22,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse) async {
-        guard response.actionIdentifier == NotificationManager.takeAllAction,
-              let raw = response.notification.request.content.userInfo["moment"] as? String,
+        guard let raw = response.notification.request.content.userInfo["moment"] as? String,
               let moment = Moment(rawValue: raw) else { return }
+        if response.actionIdentifier == NotificationManager.snoozeAction {
+            NotificationManager.snooze(moment)
+            return
+        }
+        guard response.actionIdentifier == NotificationManager.takeAllAction else { return }
         DoseStore.shared.markMoment(moment)
         WidgetCenter.shared.reloadAllTimelines()
         NotificationManager.reschedule()

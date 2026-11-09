@@ -57,6 +57,13 @@ struct TodayView: View {
             model.refresh()
         }
         .sensoryFeedback(.success, trigger: celebration)
+        .task {
+            // L'alerte d'oubli est active par défaut : on demande l'autorisation au premier lancement.
+            if DoseStore.shared.lateAlertOn || DoseStore.shared.remindersOn {
+                _ = await NotificationManager.requestAuthorization()
+                NotificationManager.reschedule()
+            }
+        }
     }
 
     private var header: some View {

@@ -35,6 +35,8 @@ final class DoseStore {
         static let reminders = "dose.reminders"
         static let remindersOn = "dose.remindersOn"
         static let autoPin = "dose.autoPin"
+        static let lateAlertOn = "dose.lateAlertOn"
+        static let lateAlertDelay = "dose.lateAlertDelay"
     }
 
     private static let dayFormatter: DateFormatter = {
@@ -313,6 +315,18 @@ final class DoseStore {
     var remindersOn: Bool {
         get { defaults.bool(forKey: Key.remindersOn) }
         set { defaults.set(newValue, forKey: Key.remindersOn) }
+    }
+
+    /// Alerte « Attention, t'as pas pris de… » si rien n'est coché après le délai.
+    var lateAlertOn: Bool {
+        get { defaults.object(forKey: Key.lateAlertOn) as? Bool ?? true }
+        set { defaults.set(newValue, forKey: Key.lateAlertOn) }
+    }
+
+    /// Délai après l'heure du moment, en minutes.
+    var lateAlertDelay: Int {
+        get { defaults.object(forKey: Key.lateAlertDelay) as? Int ?? 60 }
+        set { defaults.set(newValue, forKey: Key.lateAlertDelay) }
     }
 
     /// Épingle la checklist sur l'écran verrouillé à chaque ouverture de l'app.

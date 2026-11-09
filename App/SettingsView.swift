@@ -6,6 +6,8 @@ struct SettingsView: View {
 
     @State private var draft: [Supplement] = []
     @State private var remindersOn = false
+    @State private var lateOn = true
+    @State private var lateDelay = 60
     @State private var autoPin = true
     @State private var tick = 0
 
@@ -47,8 +49,29 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Toggle("Rappels", isOn: Binding(get: { remindersOn }, set: setReminders))
-                    if remindersOn {
+                    Toggle("Rappel à l'heure", isOn: Binding(get: { remindersOn }, set: { v in
+                        remindersOn = v
+                        store.remindersOn = v
+                        applyNotifications(turningOn: v)
+                    }))
+                    Toggle("Alerte si oubli", isOn: Binding(get: { lateOn }, set: { v in
+                        lateOn = v
+                        store.lateAlertOn = v
+                        applyNotifications(turningOn: v)
+                    }))
+                    if lateOn {
+                        Picker("Alerte après", selection: Binding(get: { lateDelay }, set: { v in
+                            lateDelay = v
+                            store.lateAlertDelay = v
+                            NotificationManager.reschedule()
+                        })) {
+                            Text("30 min").tag(30)
+                            Text("1 h").tag(60)
+                            Text("2 h").tag(120)
+                            Text("3 h").tag(180)
+                        }
+                    }
+                    if remindersOn || lateOn {
                         ForEach(usedMoments) { m in
                             DatePicker(selection: timeBinding(m), displayedComponents: .hourAndMinute) {
                                 Label(m.label, systemImage: m.symbol)
@@ -56,9 +79,9 @@ struct SettingsView: View {
                         }
                     }
                 } header: {
-                    Text("Rappels")
+                    Text("Notifications")
                 } footer: {
-                    Text("Pas de rappel pour un moment déjà coché. Le bouton « C'est pris ✓ » de la notification coche tout le moment.")
+                    Text("« Alerte si oubli » : si un complément n'est toujours pas coché après le délai, tu reçois « Attention, t'as pas pris de Zinc ». Rien n'est envoyé pour ce qui est déjà coché. Dans la notification : « C'est pris ✓ » coche tout le moment, « Dans 30 min » repousse l'alerte.")
                 }
 
                 Section {
@@ -93,6 +116,8 @@ struct SettingsView: View {
             .onAppear {
                 draft = model.supplements
                 remindersOn = store.remindersOn
+                lateOn = store.lateAlertOn
+                lateDelay = store.lateAlertDelay
                 autoPin = store.autoPin
             }
         }
@@ -103,10 +128,9 @@ struct SettingsView: View {
         Moment.allCases.filter { m in draft.contains { $0.moment == m } }
     }
 
-    private func setReminders(_ on: Bool) {
-        remindersOn = on
-        store.remindersOn = on
-        guard on else {
+    /// Demande l'autorisation la première fois, puis reprogramme tout.
+    private func applyNotifications(turningOn: Bool) {
+        guard turningOn else {
             NotificationManager.reschedule()
             return
         }
@@ -114,7 +138,9 @@ struct SettingsView: View {
             let granted = await NotificationManager.requestAuthorization()
             if !granted {
                 remindersOn = false
+                lateOn = false
                 store.remindersOn = false
+                store.lateAlertOn = false
             }
             NotificationManager.reschedule()
         }

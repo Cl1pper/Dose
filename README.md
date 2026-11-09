@@ -7,6 +7,7 @@ Ta checklist de compléments, en app iPhone native :
 - **Live Activity** : un grand bandeau coloré sur l'écran verrouillé et dans la Dynamic Island, avec un bouton par complément. Il disparaît tout seul quand tout est pris.
 - **Dans l'app** : anneau animé, cartes qui rebondissent, série de jours 🔥, confettis quand tout est pris, retour haptique.
 - **Rappels** à l'heure de chaque moment (matin, midi, soir, coucher), seulement s'il reste quelque chose à prendre, avec un bouton « C'est pris ✓ » directement dans la notification.
+- **Alerte d'oubli** : si un complément n'est toujours pas coché un certain temps après l'heure prévue (1 h par défaut, réglable), tu reçois « Attention ⚠️ — T'as pas pris de Zinc ». Elle s'annule dès que tu coches, et le bouton « Dans 30 min » la repousse.
 - **Pastille sur l'icône** = nombre de compléments restants aujourd'hui.
 - **Suivi complet de chaque prise** : l'heure est enregistrée automatiquement, même quand tu coches depuis un widget ou l'écran verrouillé, avec la dose habituelle de chaque complément.
   - **Appui long sur une carte** pour modifier l'heure ou la dose du jour (par exemple 2 gélules au lieu d'une), ou retirer la prise.
