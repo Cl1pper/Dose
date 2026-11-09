@@ -84,25 +84,23 @@ struct DoseBubble<Action: AppIntent>: View {
     var body: some View {
         Button(intent: action) {
             VStack(spacing: 4) {
+                // Tout reste DANS le rond : rien ne déborde sur les voisins ni sur les noms.
                 ZStack {
-                    halo
-                    ZStack {
+                    Circle()
+                        .fill(color.opacity(0.10))
+                    Circle()
+                        .strokeBorder(color.opacity(item.taken ? 0 : 0.55), lineWidth: max(2, size * 0.055))
+                    if item.taken {
                         Circle()
-                            .fill(color.opacity(0.10))
-                        Circle()
-                            .strokeBorder(color.opacity(item.taken ? 0 : 0.55), lineWidth: max(2, size * 0.055))
-                        if item.taken {
-                            Circle()
-                                .fill(color)
-                                .transition(effect.fillTransition)
-                        }
-                        icon
+                            .fill(color)
+                            .transition(effect.fillTransition)
                     }
-                    .frame(width: size, height: size)
-                    .clipShape(Circle())
+                    inner
+                    icon
                     accent
                 }
                 .frame(width: size, height: size)
+                .clipShape(Circle())
 
                 if showName {
                     Text(item.supplement.name)
@@ -141,37 +139,29 @@ struct DoseBubble<Action: AppIntent>: View {
         }
     }
 
-    // MARK: Autour du rond
+    // MARK: Effets intérieurs (dans le rond)
 
-    @ViewBuilder private var halo: some View {
+    @ViewBuilder private var inner: some View {
         if item.taken {
             switch effect {
             case .sun:
-                ZStack {
-                    Circle()
-                        .fill(RadialGradient(colors: [color.opacity(0.6), color.opacity(0)],
-                                             center: .center, startRadius: size * 0.3, endRadius: size * 0.9))
-                        .frame(width: size * 1.8, height: size * 1.8)
-                    ForEach(0..<8, id: \.self) { i in
-                        Capsule()
-                            .fill(color)
-                            .frame(width: max(2, size * 0.07), height: size * 0.16)
-                            .offset(y: -size * 0.68)
-                            .rotationEffect(.degrees(Double(i) * 45))
-                    }
-                }
-                .transition(.scale(scale: 0.4).combined(with: .opacity))
+                // Le soleil « brille » : un cœur lumineux qui s'allume au centre.
+                Circle()
+                    .fill(RadialGradient(colors: [Color.white.opacity(0.75), Color.white.opacity(0)],
+                                         center: .center, startRadius: 0, endRadius: size * 0.42))
+                    .transition(.scale(scale: 0.2).combined(with: .opacity))
             case .shield:
+                // Le bouclier s'active : un anneau protecteur à l'intérieur du bord.
                 Circle()
-                    .strokeBorder(color.opacity(0.7), lineWidth: max(1.5, size * 0.04))
-                    .frame(width: size * 1.32, height: size * 1.32)
-                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                    .strokeBorder(Color.white.opacity(0.7), lineWidth: max(1.5, size * 0.045))
+                    .padding(size * 0.08)
+                    .transition(.scale(scale: 1.3).combined(with: .opacity))
             case .flex:
+                // Le bras gonfle : une onde qui part du bas.
                 Circle()
-                    .fill(RadialGradient(colors: [color.opacity(0.45), color.opacity(0)],
-                                         center: .center, startRadius: size * 0.35, endRadius: size * 0.8))
-                    .frame(width: size * 1.6, height: size * 1.6)
-                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+                    .fill(RadialGradient(colors: [Color.white.opacity(0.4), Color.white.opacity(0)],
+                                         center: .bottom, startRadius: 0, endRadius: size * 0.7))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             default:
                 EmptyView()
             }
@@ -182,22 +172,22 @@ struct DoseBubble<Action: AppIntent>: View {
         if item.taken {
             switch effect {
             case .moon:
-                Image(systemName: "zzz")
-                    .font(.system(size: size * 0.26, weight: .bold))
-                    .foregroundStyle(color)
-                    .offset(x: size * 0.46, y: -size * 0.48)
+                Image(systemName: "sparkle")
+                    .font(.system(size: size * 0.16, weight: .bold))
+                    .foregroundStyle(Theme.bg.opacity(0.7))
+                    .offset(x: size * 0.2, y: -size * 0.22)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             case .leaf:
                 Image(systemName: "drop.fill")
-                    .font(.system(size: size * 0.22, weight: .bold))
-                    .foregroundStyle(color)
-                    .offset(x: size * 0.42, y: -size * 0.44)
+                    .font(.system(size: size * 0.15, weight: .bold))
+                    .foregroundStyle(Theme.bg.opacity(0.7))
+                    .offset(x: size * 0.22, y: -size * 0.2)
                     .transition(.move(edge: .top).combined(with: .opacity))
             case .bolt:
                 Image(systemName: "sparkle")
-                    .font(.system(size: size * 0.24, weight: .bold))
-                    .foregroundStyle(color)
-                    .offset(x: size * 0.44, y: -size * 0.46)
+                    .font(.system(size: size * 0.15, weight: .bold))
+                    .foregroundStyle(Theme.bg.opacity(0.7))
+                    .offset(x: size * 0.22, y: -size * 0.22)
                     .transition(.scale(scale: 0.1).combined(with: .opacity))
             default:
                 EmptyView()
