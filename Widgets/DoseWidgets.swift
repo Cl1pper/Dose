@@ -72,57 +72,41 @@ struct ItemRow: View {
     }
 }
 
-// MARK: - Écran d'accueil
+// MARK: - Écran d'accueil (un rond par complément)
+
+private struct WidgetHeader: View {
+    let s: DoseSnapshot
+    var compact = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("DOSE")
+                .font(.system(size: compact ? 11 : 12, weight: .heavy))
+                .tracking(1.5)
+                .foregroundStyle(Theme.accent)
+            Text(s.isComplete ? "tout pris" : "\(s.done)/\(s.total)")
+                .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
+                .contentTransition(.numericText(value: Double(s.done)))
+            Spacer(minLength: 0)
+            StreakBadge(streak: s.streak)
+        }
+    }
+}
 
 struct SmallView: View {
     let s: DoseSnapshot
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("DOSE")
-                    .font(.caption2.weight(.heavy))
-                    .tracking(1.5)
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                StreakBadge(streak: s.streak)
+        let items = Array(s.items.prefix(6))
+        VStack(spacing: 10) {
+            WidgetHeader(s: s, compact: true)
+            Spacer(minLength: 0)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 12) {
+                ForEach(items) { DoseBubble(item: $0, size: 40) }
             }
-            ZStack {
-                DoseRing(fraction: s.fraction, lineWidth: 9)
-                VStack(spacing: 0) {
-                    Text("\(s.done)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .contentTransition(.numericText(value: Double(s.done)))
-                    Text("sur \(s.total)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            if let next = s.next {
-                let c = Color(hex: next.supplement.colorHex)
-                Button(intent: ToggleSupplementIntent(supplementID: next.id)) {
-                    HStack(spacing: 4) {
-                        Image(systemName: next.supplement.symbol)
-                        Text(next.supplement.name).lineLimit(1)
-                    }
-                    .font(.caption.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 5)
-                    .foregroundStyle(c)
-                    .background(c.opacity(0.22), in: Capsule())
-                }
-                .buttonStyle(.plain)
-                .transition(.push(from: .trailing))
-            } else {
-                Label("Tout pris", systemImage: "checkmark.seal.fill")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.mint)
-                    .frame(maxWidth: .infinity)
-                    .transition(.scale.combined(with: .opacity))
-            }
+            Spacer(minLength: 0)
         }
+        .padding(12)
     }
 }
 
@@ -130,24 +114,20 @@ struct MediumView: View {
     let s: DoseSnapshot
 
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                DoseRing(fraction: s.fraction, lineWidth: 10)
-                VStack(spacing: 2) {
-                    Text("\(s.done)/\(s.total)")
-                        .font(.system(size: 20, weight: .heavy, design: .rounded))
-                        .contentTransition(.numericText(value: Double(s.done)))
-                    StreakBadge(streak: s.streak)
+        let items = Array(s.items.prefix(6))
+        VStack(spacing: 10) {
+            WidgetHeader(s: s)
+            Spacer(minLength: 0)
+            HStack(spacing: 0) {
+                ForEach(items) { item in
+                    DoseBubble(item: item, size: 46, showName: true)
+                        .frame(maxWidth: .infinity)
                 }
             }
-            .frame(width: 92, height: 92)
-
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(s.items.prefix(6))) { item in
-                    ItemRow(item: item, compact: true)
-                }
-            }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 12)
     }
 }
 
@@ -155,36 +135,18 @@ struct LargeView: View {
     let s: DoseSnapshot
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                DoseRing(fraction: s.fraction, lineWidth: 7)
-                    .frame(width: 44, height: 44)
-                    .overlay(
-                        Text("\(s.done)")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .contentTransition(.numericText(value: Double(s.done)))
-                    )
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Dose du jour").font(.headline)
-                    Text(s.isComplete ? "Tout est pris 🎉" : "\(s.remaining) à prendre")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                StreakBadge(streak: s.streak)
-            }
-            ForEach(s.moments) { m in
-                VStack(alignment: .leading, spacing: 5) {
-                    Label(m.label.uppercased(), systemImage: m.symbol)
-                        .font(.system(size: 10, weight: .heavy))
-                        .foregroundStyle(.secondary)
-                    ForEach(s.items(for: m)) { item in
-                        ItemRow(item: item)
-                    }
-                }
+        VStack(spacing: 14) {
+            WidgetHeader(s: s)
+            Spacer(minLength: 0)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 22) {
+                ForEach(s.items) { DoseBubble(item: $0, size: 74, showName: true) }
             }
             Spacer(minLength: 0)
+            Text(s.isComplete ? "Tout est pris 🎉" : "Touche un rond quand c'est pris")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
+        .padding(14)
     }
 }
 
@@ -212,6 +174,7 @@ struct DoseWidget: Widget {
         StaticConfiguration(kind: "DoseWidget", provider: DoseProvider()) { entry in
             DoseWidgetView(entry: entry)
         }
+        .contentMarginsDisabled()
         .configurationDisplayName("Dose du jour")
         .description("Coche tes compléments sans ouvrir l'app.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
