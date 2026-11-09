@@ -113,6 +113,13 @@ struct SettingsView: View {
                     .fontWeight(.semibold)
                 }
             }
+            // Enregistrement automatique : rien n'est perdu si la fenêtre est fermée en la glissant.
+            .onChange(of: draft) { _, newValue in
+                model.save(newValue)
+            }
+            .onDisappear {
+                model.save(draft)
+            }
             .onAppear {
                 draft = model.supplements
                 remindersOn = store.remindersOn

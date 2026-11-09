@@ -181,6 +181,25 @@ final class DoseStore {
         saveLog(log)
     }
 
+    /// Complète les prises du jour enregistrées sans quantité avec la dose habituelle actuelle
+    /// (ex. : complément coché avant d'avoir renseigné sa dose).
+    func fillMissingDoses(on date: Date = .now) {
+        var log = loadLog()
+        let key = Self.dayKey(date)
+        guard var list = log[key] else { return }
+        var changed = false
+        for i in list.indices where list[i].amount == nil {
+            if let s = supplements.first(where: { $0.id == list[i].supplementID }), let amount = s.amount {
+                list[i].amount = amount
+                list[i].unit = s.unit
+                changed = true
+            }
+        }
+        guard changed else { return }
+        log[key] = list
+        saveLog(log)
+    }
+
     // MARK: Séries et progression
 
     private func isComplete(_ day: Date, ids: Set<String>, log: IntakeLog) -> Bool {

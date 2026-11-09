@@ -59,9 +59,10 @@ final class DoseModel: ObservableObject {
     }
 
     func save(_ list: [Supplement]) {
+        guard list != store.supplements else { return }
         store.supplements = list
         supplements = list
-        apply {}
+        apply { store.fillMissingDoses() }
     }
 
     func pin() {
